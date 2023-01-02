@@ -1,18 +1,6 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
-import {LayoutChangeEvent, StyleSheet, View} from 'react-native';
-import {
-  Canvas,
-  Group,
-  Skia,
-  Path,
-  Mask,
-  Rect,
-  Image,
-  useImage,
-  SkPath,
-} from '@shopify/react-native-skia';
-import {Gesture, GestureDetector} from 'react-native-gesture-handler';
-import {svgPathProperties} from 'svg-path-properties';
+import React, {useCallback, useState} from 'react';
+import {LayoutChangeEvent, StyleSheet} from 'react-native';
+import {Image, useImage} from '@shopify/react-native-skia';
 
 interface ILayersProps {
   width: number;
@@ -52,94 +40,12 @@ export const ScratchCard = () => {
     height: 0,
   });
 
-  const STROKE_WIDTH = useRef<number>(40); // width of the scratch stroke
-  const totalArea = useRef<number>(0); // Total area of the scratch card
-  const pathArea = useRef<number>(0); // Total scratched area
-  const [isScratched, setIsScratched] = useState(false); // is canvas scratched enough (> threshold)
-  const [paths, setPaths] = useState<SkPath[]>([]); // user's scratch data in form of svg path
-
-  const pan = Gesture.Pan()
-    .onStart(g => {
-      const newPaths = [...paths];
-
-      const path = Skia.Path.Make(); // Initiates a new svg path
-      path.moveTo(g.x, g.y); // Starting point
-      newPaths.push(path);
-      setPaths(newPaths);
-    })
-    .onUpdate(g => {
-      const newPaths = [...paths];
-      const path = newPaths[newPaths.length - 1]; // Gets the last added path
-      path.lineTo(g.x, g.y); // Makes a line to the user's current gesture position
-      setPaths(newPaths);
-    })
-    .onEnd(() => {
-      const pathProperties = new svgPathProperties(
-        paths[paths.length - 1].toSVGString(),
-      );
-
-      pathArea.current +=
-        pathProperties.getTotalLength() * STROKE_WIDTH.current;
-
-      const areaScratched = (pathArea.current / totalArea.current) * 100;
-
-      if (areaScratched > 70) {
-        setIsScratched(true);
-        // Do other stuff like provide a force feedback to the user (Vibration)
-        // Disable the gesture handler to avoid registering more inputs (Saves computation and memory)
-      }
-    })
-    .minDistance(1);
-
   const handleCanvasLayout = useCallback((e: LayoutChangeEvent) => {
     const {width, height} = e.nativeEvent.layout;
     setCanvasLayoutMeta({width, height});
-    totalArea.current = width * height;
   }, []);
 
-  const {width, height} = useMemo(() => canvasLayoutMeta, [canvasLayoutMeta]);
-
-  return (
-    <GestureDetector gesture={pan}>
-      <View style={styles.container}>
-        <Canvas onLayout={handleCanvasLayout} style={styles.canvas}>
-          <Offer width={width} height={height} />
-          {!isScratched ? (
-            <Mask
-              clip
-              mode="luminance"
-              mask={
-                <Group>
-                  <Rect
-                    x={0}
-                    y={0}
-                    width={width}
-                    height={height}
-                    color="white"
-                  />
-                  {paths.map(p => (
-                    <Path
-                      key={p.toSVGString()}
-                      path={p}
-                      strokeWidth={STROKE_WIDTH.current}
-                      style="stroke"
-                      strokeJoin={'round'}
-                      strokeCap={'round'}
-                      antiAlias
-                      color={'black'}
-                    />
-                  ))}
-                </Group>
-              }>
-              <ScratchPattern width={width} height={height} />
-            </Mask>
-          ) : (
-            <Offer width={width} height={height} />
-          )}
-        </Canvas>
-      </View>
-    </GestureDetector>
-  );
+  return <></>;
 };
 
 const styles = StyleSheet.create({
