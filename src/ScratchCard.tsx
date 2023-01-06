@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react';
-import {LayoutChangeEvent, StyleSheet, View} from 'react-native';
+import {Button, LayoutChangeEvent, StyleSheet, View} from 'react-native';
 import {
   Canvas,
   Group,
@@ -53,8 +53,7 @@ export const ScratchCard = () => {
   });
 
   const STROKE_WIDTH = useRef<number>(40); // width of the scratch stroke
-  const totalArea = useRef<number>(0); // Total area of the scratch card
-  const pathArea = useRef<number>(0); // Total scratched area
+  const totalAreaScratched = useRef<number>(0); // Total area scratched on the scratch card
   const [isScratched, setIsScratched] = useState(false); // is canvas scratched enough (> threshold)
   const [paths, setPaths] = useState<SkPath[]>([]); // user's scratch data in form of svg path
 
@@ -78,10 +77,11 @@ export const ScratchCard = () => {
         paths[paths.length - 1].toSVGString(),
       );
 
-      pathArea.current +=
-        pathProperties.getTotalLength() * STROKE_WIDTH.current;
-
-      const areaScratched = (pathArea.current / totalArea.current) * 100;
+      const pathArea = pathProperties.getTotalLength() * STROKE_WIDTH.current;
+      totalAreaScratched.current += pathArea;
+      const {width, height} = canvasLayoutMeta;
+      const areaScratched =
+        (totalAreaScratched.current / (width * height)) * 100;
 
       if (areaScratched > 70) {
         setIsScratched(true);
@@ -89,13 +89,19 @@ export const ScratchCard = () => {
         // Disable the gesture handler to avoid registering more inputs (Saves computation and memory)
       }
     })
-    .minDistance(1);
+    .minDistance(1)
+    .enabled(!isScratched);
 
   const handleCanvasLayout = useCallback((e: LayoutChangeEvent) => {
     const {width, height} = e.nativeEvent.layout;
     setCanvasLayoutMeta({width, height});
-    totalArea.current = width * height;
   }, []);
+
+  const handleReset = () => {
+    setIsScratched(false);
+    setPaths([]);
+    totalAreaScratched.current = 0;
+  };
 
   const {width, height} = useMemo(() => canvasLayoutMeta, [canvasLayoutMeta]);
 
@@ -137,6 +143,9 @@ export const ScratchCard = () => {
             <Offer width={width} height={height} />
           )}
         </Canvas>
+        <View style={styles.buttonContainer}>
+          <Button title="Reset" onPress={handleReset} />
+        </View>
       </View>
     </GestureDetector>
   );
@@ -151,6 +160,9 @@ const styles = StyleSheet.create({
   canvas: {
     width: '100%',
     height: '100%',
+  },
+  buttonContainer: {
+    marginTop: 50,
   },
 });
 export default ScratchCard;
